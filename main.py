@@ -50,6 +50,10 @@ def crawl_site(
     pass
 
 
+def not_valid_sitemap_url(sitemap_url: str) -> bool:
+    return not sitemap_url.endswith(".xml")
+
+
 @app.command("crawl-from-sitemap", help="Crawl a site from a sitemap.xml url")
 def crawl_from_sitemap(
     sitemap_url: str = typer.Argument(..., help="The URL of the sitemap.xml file"),
@@ -58,7 +62,8 @@ def crawl_from_sitemap(
     ),
 ):
     proxy = get_proxy() if use_proxy else None
-    
+    if not_valid_sitemap_url(sitemap_url):
+        raise ValueError("Invalid sitemap URL")
     pass
 
 
