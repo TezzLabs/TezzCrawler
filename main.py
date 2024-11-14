@@ -1,4 +1,6 @@
 import os
+import time
+import random
 import logging
 from pathlib import Path
 
@@ -25,6 +27,24 @@ def get_proxy():
     return proxy
 
 
+def get_headers():
+    return {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache",
+        "TE": "trailers",
+    }
+
+
 @app.command("scrape-page", help="Scrape a single webpage")
 def scrape_page(
     url: str = typer.Argument(..., help="The URL of the webpage to scrape"),
@@ -33,7 +53,8 @@ def scrape_page(
     ),
 ):
     proxy = get_proxy() if use_proxy else None
-    response = requests.get(url, proxies=proxy)
+    headers = get_headers()
+    response = requests.get(url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "html.parser")
     markdown = markdownify.markdownify(str(soup), heading_style="ATX")
     save_path = (
@@ -41,13 +62,6 @@ def scrape_page(
     )
     save_path.parent.mkdir(exist_ok=True)
     save_path.write_text(markdown)
-
-
-@app.command("convert-to-markdown", help="Convert a .html file to markdown")
-def convert_to_markdown(
-    html_file: str = typer.Argument(..., help="The path to the .html file to convert"),
-):
-    pass
 
 
 @app.command("crawl-site", help="Crawl a site and convert all .html files to markdown")
@@ -71,10 +85,27 @@ def crawl_from_sitemap(
         False, "--use-proxy", help="Use a proxy to crawl the site"
     ),
 ):
-    proxy = get_proxy() if use_proxy else None
     if not_valid_sitemap_url(sitemap_url):
         raise ValueError("Invalid sitemap URL")
-    pass
+    proxy = get_proxy() if use_proxy else None
+    headers = get_headers()
+    # Fetch the sitemap
+    response = requests.get(sitemap_url, proxies=proxy, headers=headers)
+    soup = BeautifulSoup(response.content, "xml")
+    # Extract all URLs from the sitemap
+    urls = [loc.text for loc in soup.find_all("loc")]
+    for url in urls:
+        # Visit each URL and convert to markdown
+        response = requests.get(url, proxies=proxy, headers=headers)
+        page_soup = BeautifulSoup(response.content, "html.parser")
+        markdown = markdownify.markdownify(str(page_soup), heading_style="ATX")
+        # Save the markdown file
+        save_path = (
+            Path(__file__).parent / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
+        )
+        save_path.parent.mkdir(exist_ok=True)
+        save_path.write_text(markdown)
+        time.sleep(random.uniform(1, 3))
 
 
 if __name__ == "__main__":
