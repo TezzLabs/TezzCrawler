@@ -8,14 +8,22 @@ import markdownify
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
+from webshare import WebshareAPI
+
 load_dotenv()
 
 app = typer.Typer()
 
 
 def get_proxy():
-    proxy = dict()  # TODO: Add proxy
+    api = WebshareAPI()
+    proxy_details = api.get_proxy()
+    proxy = {
+        "http": f"http://{proxy_details}",
+        "https": f"https://{proxy_details}",
+    }
     return proxy
+
 
 @app.command("scrape-page", help="Scrape a single webpage")
 def scrape_page(
@@ -28,7 +36,9 @@ def scrape_page(
     response = requests.get(url, proxies=proxy)
     soup = BeautifulSoup(response.content, "html.parser")
     markdown = markdownify.markdownify(str(soup), heading_style="ATX")
-    save_path = Path(__file__).parent / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
+    save_path = (
+        Path(__file__).parent / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
+    )
     save_path.parent.mkdir(exist_ok=True)
     save_path.write_text(markdown)
 
@@ -70,7 +80,7 @@ def crawl_from_sitemap(
 if __name__ == "__main__":
     log_folder = Path(__file__).parent / "logs"
     log_folder.mkdir(exist_ok=True)
-    
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s || %(name)s || %(levelname)s || %(message)s",
