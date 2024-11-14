@@ -64,16 +64,6 @@ def scrape_page(
     save_path.write_text(markdown)
 
 
-@app.command("crawl-site", help="Crawl a site and convert all .html files to markdown")
-def crawl_site(
-    url: str = typer.Argument(..., help="The URL of the site to crawl"),
-    use_proxy: bool = typer.Option(
-        False, "--use-proxy", help="Use a proxy to crawl the site"
-    ),
-):
-    pass
-
-
 def not_valid_sitemap_url(sitemap_url: str) -> bool:
     return not sitemap_url.endswith(".xml")
 
@@ -89,18 +79,14 @@ def crawl_from_sitemap(
         raise ValueError("Invalid sitemap URL")
     proxy = get_proxy() if use_proxy else None
     headers = get_headers()
-    # Fetch the sitemap
     response = requests.get(sitemap_url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "xml")
-    # Extract all URLs from the sitemap
     urls = [loc.text for loc in soup.find_all("loc")]
     for url in urls:
-        # Visit each URL and convert to markdown
         print(f"Scraping {url}")
         response = requests.get(url, proxies=proxy, headers=headers)
         page_soup = BeautifulSoup(response.content, "html.parser")
         markdown = markdownify.markdownify(str(page_soup), heading_style="ATX")
-        # Save the markdown file
         save_path = (
             Path(__file__).parent / "output" / f"{url.split('/')[2]}" / f"{'-'.join(url.split('/')[3:])}.md"
         )
