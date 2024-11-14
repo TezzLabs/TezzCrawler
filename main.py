@@ -22,7 +22,7 @@ def get_proxy():
     proxy_details = api.get_proxy()
     proxy = {
         "http": f"http://{proxy_details}",
-        "https": f"https://{proxy_details}",
+        # "https": f"https://{proxy_details}",
     }
     return proxy
 
@@ -96,14 +96,16 @@ def crawl_from_sitemap(
     urls = [loc.text for loc in soup.find_all("loc")]
     for url in urls:
         # Visit each URL and convert to markdown
+        print(f"Scraping {url}")
         response = requests.get(url, proxies=proxy, headers=headers)
         page_soup = BeautifulSoup(response.content, "html.parser")
         markdown = markdownify.markdownify(str(page_soup), heading_style="ATX")
         # Save the markdown file
         save_path = (
-            Path(__file__).parent / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
+            Path(__file__).parent / "output" / f"{url.split('/')[2]}" / f"{'-'.join(url.split('/')[3:])}.md"
         )
-        save_path.parent.mkdir(exist_ok=True)
+        print(f"Saving to {save_path}")
+        save_path.parent.mkdir(exist_ok=True, parents=True)
         save_path.write_text(markdown)
         time.sleep(random.uniform(1, 3))
 
