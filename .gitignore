@@ -3,4 +3,6 @@
 logs/
 output/
 
-**.pyc.cursorignore
+**.pyc
+
+.cursorignore
