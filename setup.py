@@ -23,7 +23,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10",
-    install_requires=parse_requirements("requirements.txt"),
+    install_requires=parse_requirements("./requirements.txt"),
     entry_points={
         "console_scripts": [
             "tezzcrawler=tezzcrawler.main:app",
