@@ -6,3 +6,7 @@ output/
 **.pyc
 
 .cursorignore
+
+dist/
+build/
+TezzCrawler.egg-info/

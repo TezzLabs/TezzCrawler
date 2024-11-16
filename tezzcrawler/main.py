@@ -10,7 +10,7 @@ import markdownify
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from webshare import WebshareAPI
+from tezzcrawler.webshare import WebshareAPI
 
 load_dotenv()
 
