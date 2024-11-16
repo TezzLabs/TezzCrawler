@@ -1,24 +1,21 @@
-import os
 import time
 import random
-import logging
 from pathlib import Path
 
 import typer
 import requests
 import markdownify
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+from rich.progress import track
 
 from tezzcrawler.webshare import WebshareAPI
 
-load_dotenv()
 
 app = typer.Typer()
 
 
-def get_proxy():
-    api = WebshareAPI()
+def get_proxy(webshare_api: str):
+    api = WebshareAPI(webshare_api)
     proxy_details = api.get_proxy()
     proxy = {
         "http": f"http://{proxy_details}",
@@ -48,19 +45,20 @@ def get_headers():
 @app.command("scrape-page", help="Scrape a single webpage")
 def scrape_page(
     url: str = typer.Argument(..., help="The URL of the webpage to scrape"),
-    use_proxy: bool = typer.Option(
-        False, "--use-proxy", help="Use a proxy to scrape the page"
+    webshare_api: str = typer.Option(
+        None, "--webshare-api", help="Webshare API key to use a proxy"
+    ),
+    output: Path = typer.Option(
+        ..., "--output", help="The output directory to save the scraped content"
     ),
 ):
-    proxy = get_proxy() if use_proxy else None
+    proxy = get_proxy(webshare_api) if webshare_api else None
     headers = get_headers()
     response = requests.get(url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "html.parser")
     markdown = markdownify.markdownify(str(soup), heading_style="ATX")
-    save_path = (
-        Path(__file__).parent / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
-    )
-    save_path.parent.mkdir(exist_ok=True)
+    save_path = output / f"{url.split('/')[-2]}" / f"{url.split('/')[-1]}.md"
+    save_path.parent.mkdir(exist_ok=True, parents=True)
     save_path.write_text(markdown)
 
 
@@ -71,39 +69,31 @@ def not_valid_sitemap_url(sitemap_url: str) -> bool:
 @app.command("crawl-from-sitemap", help="Crawl a site from a sitemap.xml url")
 def crawl_from_sitemap(
     sitemap_url: str = typer.Argument(..., help="The URL of the sitemap.xml file"),
-    use_proxy: bool = typer.Option(
-        False, "--use-proxy", help="Use a proxy to crawl the site"
+    webshare_api: str = typer.Option(
+        None, "--webshare-api", help="Webshare API key to use a proxy"
+    ),
+    output: Path = typer.Option(
+        ..., "--output", help="The output directory to save the scraped content"
     ),
 ):
     if not_valid_sitemap_url(sitemap_url):
         raise ValueError("Invalid sitemap URL")
-    proxy = get_proxy() if use_proxy else None
+    proxy = get_proxy(webshare_api) if webshare_api else None
     headers = get_headers()
     response = requests.get(sitemap_url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "xml")
     urls = [loc.text for loc in soup.find_all("loc")]
-    for url in urls:
-        print(f"Scraping {url}")
+    for url in track(urls, description="Scraping pages"):
         response = requests.get(url, proxies=proxy, headers=headers)
         page_soup = BeautifulSoup(response.content, "html.parser")
         markdown = markdownify.markdownify(str(page_soup), heading_style="ATX")
         save_path = (
-            Path(__file__).parent / "output" / f"{url.split('/')[2]}" / f"{'-'.join(url.split('/')[3:])}.md"
+            output / f"{url.split('/')[2]}" / f"{'-'.join(url.split('/')[3:])}.md"
         )
-        print(f"Saving to {save_path}")
         save_path.parent.mkdir(exist_ok=True, parents=True)
         save_path.write_text(markdown)
         time.sleep(random.uniform(1, 3))
 
 
 if __name__ == "__main__":
-    log_folder = Path(__file__).parent / "logs"
-    log_folder.mkdir(exist_ok=True)
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s || %(name)s || %(levelname)s || %(message)s",
-        handlers=[logging.FileHandler(log_folder / "app.log"), logging.StreamHandler()],
-    )
-
     app()

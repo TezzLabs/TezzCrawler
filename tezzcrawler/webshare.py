@@ -1,28 +1,22 @@
-import os
-import json
-import logging
-
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class WebshareAPI:
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, webshare_api: str):
         if cls._instance is None:
             cls._instance = super(WebshareAPI, cls).__new__(cls)
-            cls._instance.__initialize()
         return cls._instance
 
-    def __initialize(self):
-        self.base_url = "https://proxy.webshare.io/api/v2"
-        self.headers = {
-            "Authorization": f"Token {os.getenv('WEBSHARE_API_KEY')}",
-        }
-        self.proxy_list = list()
+    def __init__(self, webshare_api: str):
+        if not hasattr(self, 'initialized'):
+            self.base_url = "https://proxy.webshare.io/api/v2"
+            self.headers = {
+                "Authorization": f"Token {webshare_api}",
+            }
+            self.proxy_list = list()
+            self.initialized = True
 
     def __refresh_proxy_list(self, page: int = 1, page_size: int = 100):
         endpoint = (
