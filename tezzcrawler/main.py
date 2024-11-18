@@ -8,18 +8,13 @@ import markdownify
 from bs4 import BeautifulSoup
 from rich.progress import track
 
-from tezzcrawler.webshare import WebshareAPI
-
 
 app = typer.Typer()
 
 
-def get_proxy(webshare_api: str):
-    api = WebshareAPI(webshare_api)
-    proxy_details = api.get_proxy()
+def get_proxy(proxy_url: str, proxy_port: int, proxy_username: str, proxy_password: str):
     proxy = {
-        "http": f"http://{proxy_details}",
-        # "https": f"https://{proxy_details}",
+        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
     }
     return proxy
 
@@ -45,14 +40,23 @@ def get_headers():
 @app.command("scrape-page", help="Scrape a single webpage")
 def scrape_page(
     url: str = typer.Argument(..., help="The URL of the webpage to scrape"),
-    webshare_api: str = typer.Option(
-        None, "--webshare-api", help="Webshare API key to use a proxy"
+    proxy_url: str = typer.Option(
+        None, "--proxy-url", help="The URL of the proxy to use"
+    ),
+    proxy_port: int = typer.Option(
+        None, "--proxy-port", help="The port of the proxy to use"
+    ),
+    proxy_username: str = typer.Option(
+        None, "--proxy-username", help="The username of the proxy to use"
+    ),
+    proxy_password: str = typer.Option(
+        None, "--proxy-password", help="The password of the proxy to use"
     ),
     output: Path = typer.Option(
         ..., "--output", help="The output directory to save the scraped content"
     ),
 ):
-    proxy = get_proxy(webshare_api) if webshare_api else None
+    proxy = get_proxy(proxy_url, proxy_port, proxy_username, proxy_password) if proxy_url else None
     headers = get_headers()
     response = requests.get(url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "html.parser")
@@ -69,8 +73,17 @@ def not_valid_sitemap_url(sitemap_url: str) -> bool:
 @app.command("crawl-from-sitemap", help="Crawl a site from a sitemap.xml url")
 def crawl_from_sitemap(
     sitemap_url: str = typer.Argument(..., help="The URL of the sitemap.xml file"),
-    webshare_api: str = typer.Option(
-        None, "--webshare-api", help="Webshare API key to use a proxy"
+    proxy_url: str = typer.Option(
+        None, "--proxy-url", help="The URL of the proxy to use"
+    ),
+    proxy_port: int = typer.Option(
+        None, "--proxy-port", help="The port of the proxy to use"
+    ),
+    proxy_username: str = typer.Option(
+        None, "--proxy-username", help="The username of the proxy to use"
+    ),
+    proxy_password: str = typer.Option(
+        None, "--proxy-password", help="The password of the proxy to use"
     ),
     output: Path = typer.Option(
         ..., "--output", help="The output directory to save the scraped content"
@@ -78,7 +91,7 @@ def crawl_from_sitemap(
 ):
     if not_valid_sitemap_url(sitemap_url):
         raise ValueError("Invalid sitemap URL")
-    proxy = get_proxy(webshare_api) if webshare_api else None
+    proxy = get_proxy(proxy_url, proxy_port, proxy_username, proxy_password) if proxy_url else None
     headers = get_headers()
     response = requests.get(sitemap_url, proxies=proxy, headers=headers)
     soup = BeautifulSoup(response.content, "xml")
