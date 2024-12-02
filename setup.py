@@ -9,7 +9,7 @@ def parse_requirements(filename):
 
 setup(
     name="TezzCrawler",
-    version="0.1.0",
+    version="0.2.0",
     author="Japkeerat Singh (TezzLabs)",
     author_email="japkeerat@tezzlabs.com",
     description="A web crawler that converts web pages to markdown and prepares them for LLM consumption",
