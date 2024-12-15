@@ -9,9 +9,9 @@ def parse_requirements(filename):
 
 setup(
     name="TezzCrawler",
-    version="0.3.0",
-    author="Japkeerat Singh (TezzLabs)",
-    author_email="japkeerat@tezzlabs.com",
+    version="0.3.1",
+    author="Japkeerat Singh",
+    author_email="japkeerat21@gmail.com",
     description="A web crawler that converts web pages to markdown and prepares them for LLM consumption",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
